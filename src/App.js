@@ -1,83 +1,57 @@
 import React from 'react';
 import './index.scss';
+import {Success} from './components/Success';
+import {Users} from './components/Users';
 
-const questions = [
-    {
-        title: 'React - это ... ?',
-        variants: ['библиотека', 'фреймворк', 'приложение'],
-        correct: 0,
-    },
-    {
-        title: 'Компонент - это ... ',
-        variants: ['приложение', 'часть приложения или страницы', 'то, что я не знаю что такое'],
-        correct: 1,
-    },
-    {
-        title: 'Что такое JSX?',
-        variants: [
-            'Это простой HTML',
-            'Это функция',
-            'Это тот же HTML, но с возможностью выполнять JS-код',
-        ],
-        correct: 2,
-    },
-];
-
-function Result({correct, onClickRetry}) {
-    return (
-        <div className="result">
-            <img src="https://cdn-icons-png.flaticon.com/512/2278/2278992.png" />
-            <h2>
-                Вы отгадали {correct} ответа из {questions.length}
-            </h2>
-            <button onClick={onClickRetry}>Попробовать снова</button>
-        </div>
-    );
-}
-
-function Game({step, question, onClickVariant}) {
-    const percentage = Math.round((step / questions.length) * 100);
-    return (
-        <>
-            <div className="progress">
-                <div style={{width: `${percentage}%`}} className="progress__inner"></div>
-            </div>
-            <h1>{question.title}</h1>
-            <ul>
-                {question.variants.map((text, index) => (
-                    <li onClick={() => onClickVariant(index)} key={text}>
-                        {text}
-                    </li>
-                ))}
-            </ul>
-        </>
-    );
-}
+// Тут список пользователей: https://reqres.in/api/users
 
 function App() {
-    const [step, setStep] = React.useState(0);
-    const [correct, setCorrect] = React.useState(0);
+    const [users, setUsers] = React.useState([]);
+    const [invites, setInvites] = React.useState([]);
+    const [isLoading, setIsLoading] = React.useState(true);
+    const [success, setSuccess] = React.useState(false);
+    const [searchValue, setSearchValue] = React.useState('');
 
-    const question = questions[step];
-    const onClickVariant = (index) => {
-        setStep(step + 1);
+    React.useEffect(() => {
+        fetch('https://reqres.in/api/users')
+            .then((response) => response.json())
+            .then((json) => setUsers(json.data))
+            .catch((err) => console.log('Помилка отримання користувачів'))
+            .finally(() => setIsLoading(false));
+    });
 
-        if (index === question.correct) {
-            setCorrect(correct + 1);
+    const onChangeSearchValue = (e) => {
+        setSearchValue(e.target.value);
+    };
+
+    const onClickInvite = (id) => {
+        if (invites.includes(id)) {
+            setInvites((prev) => prev.filter((_id) => _id !== id));
+        } else {
+            setInvites((prev) => [...prev, id]);
         }
     };
-
-    const onClickRetry = () => {
-        setStep(0);
-        setCorrect(0);
+    const onClickSendInvites = () => {
+        setSuccess(true);
     };
+
     return (
         <div className="App">
-            {step !== questions.length ? (
-                <Game step={step} question={question} onClickVariant={onClickVariant} />
+            {success ? (
+                <Success count={invites.length} />
             ) : (
-                <Result correct={correct} onClickRetry={onClickRetry} />
+                <Users
+                    items={users}
+                    isLoading={isLoading}
+                    searchValue={searchValue}
+                    onChangeSearchValue={onChangeSearchValue}
+                    invites={invites}
+                    onClickInvite={onClickInvite}
+                    onClickSendInvites={onClickSendInvites}
+                />
             )}
+
+            {/* <Success /> */}
         </div>
     );
 }
